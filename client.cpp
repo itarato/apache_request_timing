@@ -140,7 +140,7 @@ void refresh_screen() {
     wmove(stdscr, 1, 1);
     char header[stdscr->_maxx - 1];
     bzero(header, (unsigned) stdscr->_maxx - 1);
-    sprintf(header, "%*s%*s%*s%*s ", colw_t, "Time (ns) ", -colw_site_id, "Request", -colw_avg, "Average (ns)", colw_chg, "Delta");
+    sprintf(header, "%*s%*s%*s%*s ", colw_t, "Time (ms) ", -colw_site_id, "Request", -colw_avg, "Average (ms)", colw_chg, "Delta");
     attron(COLOR_PAIR(COLOR_PAIR_WHITE_BLACK));
     waddstr(stdscr, header);
     attroff(COLOR_PAIR(COLOR_PAIR_WHITE_BLACK));
