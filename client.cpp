@@ -182,7 +182,7 @@ void refresh_screen() {
         char chg_str[colw_chg + 1];
         bzero(chg_str, colw_chg + 1);
         sprintf(chg_str, "%*.2f %%", colw_chg - 2, change);
-        auto color_pair = change >= 0 ? COLOR_PAIR_BLACK_GREEN : COLOR_PAIR_BLACK_RED;
+        auto color_pair = change < 0 ? COLOR_PAIR_BLACK_GREEN : COLOR_PAIR_BLACK_RED;
         attron(COLOR_PAIR(color_pair));
         waddstr(stdscr, chg_str);
         attroff(COLOR_PAIR(color_pair));
