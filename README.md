@@ -3,6 +3,8 @@ Apache Server - Request Timer
 
 This is a little experiment to see if request times can be examined realtime - and maybe apply some predition based on statistics.
 
+![screenshot](sample.png)
+
 # Requirements
 
 - apache 2.x server source files
