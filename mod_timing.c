@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -73,7 +72,9 @@ double get_micro_timestamp() {
 void report_time_via_socket(char *site_id, double t) {
     openlog("mod_timing", 0, 0);
 
-    int sockfd, portno, n;
+    int sockfd;
+    uint16_t portno;
+    long n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
     char buffer[256];
@@ -82,7 +83,7 @@ void report_time_via_socket(char *site_id, double t) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sockfd < 0) {
-        syslog(LOG_ERR, "Cannot open socket.");
+        // This can be normal, probably server is listening.
         return;
     }
 
@@ -95,7 +96,7 @@ void report_time_via_socket(char *site_id, double t) {
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    bcopy((char *) server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+    bcopy((char *) server->h_addr, (char *)&serv_addr.sin_addr.s_addr, (size_t) server->h_length);
     serv_addr.sin_port = htons(portno);
 
     if (connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
