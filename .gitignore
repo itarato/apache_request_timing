@@ -3,4 +3,6 @@
 *.slo
 .libs
 client
+CMakeLists.txt
+cmake-build-debug
 

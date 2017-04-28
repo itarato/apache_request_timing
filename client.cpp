@@ -9,6 +9,13 @@
 #include <thread>
 #include <mutex>
 #include <vector>
+#include <map>
+#include <cmath>
+
+#define COLOR_PAIR_BLACK_YELLOW 1
+#define COLOR_PAIR_BLACK_GREEN 2
+#define COLOR_PAIR_BLACK_RED 3
+
 
 struct RequestInfo {
     double t;
@@ -17,12 +24,39 @@ struct RequestInfo {
     RequestInfo(double _t, std::string _site_id) : t(_t), site_id(_site_id) {};
 };
 
+struct Avg {
+    std::vector<double> times;
+    double total_time;
+    unsigned count;
+
+    Avg(double _t) : times({_t}), total_time(_t), count(1) {};
+    void add_t(double t) {
+        times.push_back(t);
+        total_time += t;
+        count++;
+    };
+};
+
+struct Stat {
+    std::map<std::string, Avg> averages;
+
+    void consume(std::string site_id, double t) {
+        auto it = averages.find(site_id);
+        if (it == averages.end()) {
+            averages.emplace(site_id, Avg(t));
+        } else {
+            it->second.add_t(t);
+        }
+    };
+};
+
 struct APP {
     bool is_screen_dirty;
     bool is_window_dirty;
     bool quit;
     std::vector<RequestInfo> messages;
     std::mutex messages_mutex;
+    Stat stat;
 
     APP() : is_screen_dirty(true),
             is_window_dirty(true),
@@ -41,6 +75,11 @@ int main() {
     nodelay(stdscr, true);
     noecho();
     curs_set(0);
+    start_color();
+
+    init_pair(COLOR_PAIR_BLACK_GREEN, COLOR_GREEN, COLOR_BLACK);
+    init_pair(COLOR_PAIR_BLACK_YELLOW, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(COLOR_PAIR_BLACK_RED, COLOR_RED, COLOR_BLACK);
 
     std::thread listen_thread(listen_input, std::ref(app));
 
@@ -90,19 +129,53 @@ void refresh_screen() {
 
     clear();
 
+    unsigned colw_t, colw_site_id, colw_avg, colw_chg;
+    colw_t = (unsigned) floor(stdscr->_maxx * 0.15);
+    colw_avg = colw_t;
+    colw_chg = colw_t;
+    colw_site_id = stdscr->_maxx - (3 * colw_t) - 2;
+
     int line = 1;
     for (auto it = app.messages.rbegin(); it != app.messages.rend(); it++) {
         wmove(stdscr, line, 1);
 
-        char t_str[12];
-        bzero(t_str, 12);
-        sprintf(t_str, "%.2f", it->t);
+        // Print elapsed time (t).
+        char t_str[colw_t + 1];
+        bzero(t_str, colw_t + 1);
+        sprintf(t_str, "%*.2f ", colw_t - 1, it->t);
         attron(A_BOLD);
         waddstr(stdscr, t_str);
         attroff(A_BOLD);
 
-        wmove(stdscr, line, 13);
-        waddstr(stdscr, it->site_id.c_str());
+        // Print site id.
+        wmove(stdscr, line, colw_t + 1);
+        char site_id_str[colw_site_id + 1];
+        bzero(site_id_str, colw_site_id + 1);
+        strncpy(site_id_str, it->site_id.c_str(), colw_site_id - 1);
+        waddstr(stdscr, site_id_str);
+
+        auto stat_it = app.stat.averages.find(it->site_id);
+
+        // Print average.
+        double avg = stat_it->second.total_time / stat_it->second.count;
+        wmove(stdscr, line, colw_t + colw_site_id + 1);
+        char avg_str[colw_avg + 1];
+        bzero(avg_str, colw_avg + 1);
+        sprintf(avg_str, "%*.2f ", -colw_avg + 1, avg);
+        attron(COLOR_PAIR(COLOR_PAIR_BLACK_YELLOW));
+        waddstr(stdscr, avg_str);
+        attroff(COLOR_PAIR(COLOR_PAIR_BLACK_YELLOW));
+
+        // Print change.
+        double change = ((it->t - avg) / avg) * 100.0;
+        wmove(stdscr, line, colw_t + colw_site_id + colw_avg + 1);
+        char chg_str[colw_chg + 1];
+        bzero(chg_str, colw_chg + 1);
+        sprintf(chg_str, "%*.2f %%", colw_chg - 2, change);
+        auto color_pair = change >= 0 ? COLOR_PAIR_BLACK_GREEN : COLOR_PAIR_BLACK_RED;
+        attron(COLOR_PAIR(color_pair));
+        waddstr(stdscr, chg_str);
+        attroff(COLOR_PAIR(color_pair));
 
         line++;
 
@@ -158,6 +231,7 @@ void listen_input(APP& app) {
             inbuf >> t >> site_id;
 
             app.messages.push_back(RequestInfo(t, site_id));
+            app.stat.consume(site_id, t);
             app.is_screen_dirty = true;
         }
 
