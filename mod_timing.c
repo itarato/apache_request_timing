@@ -105,7 +105,7 @@ void report_time_via_socket(char *site_id, double t) {
     }
 
     bzero(buffer, 256);
-    sprintf(buffer, "%.4f|", t);
+    sprintf(buffer, "%.4f\n", t);
     size_t num_part_len = strlen(buffer);
     strncpy(buffer + num_part_len, site_id, 256 - num_part_len);
 
