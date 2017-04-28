@@ -15,6 +15,7 @@
 #define COLOR_PAIR_BLACK_YELLOW 1
 #define COLOR_PAIR_BLACK_GREEN 2
 #define COLOR_PAIR_BLACK_RED 3
+#define COLOR_PAIR_WHITE_BLACK 4
 
 
 struct RequestInfo {
@@ -80,6 +81,7 @@ int main() {
     init_pair(COLOR_PAIR_BLACK_GREEN, COLOR_GREEN, COLOR_BLACK);
     init_pair(COLOR_PAIR_BLACK_YELLOW, COLOR_YELLOW, COLOR_BLACK);
     init_pair(COLOR_PAIR_BLACK_RED, COLOR_RED, COLOR_BLACK);
+    init_pair(COLOR_PAIR_WHITE_BLACK, COLOR_BLACK, COLOR_WHITE);
 
     std::thread listen_thread(listen_input, std::ref(app));
 
@@ -135,7 +137,15 @@ void refresh_screen() {
     colw_chg = colw_t;
     colw_site_id = stdscr->_maxx - (3 * colw_t) - 2;
 
-    int line = 1;
+    wmove(stdscr, 1, 1);
+    char header[stdscr->_maxx - 1];
+    bzero(header, (unsigned) stdscr->_maxx - 1);
+    sprintf(header, "%*s%*s%*s%*s ", colw_t, "Time (ns) ", -colw_site_id, "Request", -colw_avg, "Average (ns)", colw_chg, "Delta");
+    attron(COLOR_PAIR(COLOR_PAIR_WHITE_BLACK));
+    waddstr(stdscr, header);
+    attroff(COLOR_PAIR(COLOR_PAIR_WHITE_BLACK));
+
+    int line = 2;
     for (auto it = app.messages.rbegin(); it != app.messages.rend(); it++) {
         wmove(stdscr, line, 1);
 
