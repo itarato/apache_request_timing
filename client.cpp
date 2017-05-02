@@ -96,6 +96,8 @@ int main() {
             if (ch == 27) app.quit = true;
         }
 
+        // TODO: add 'c' for clear.
+
         check_screen_state();
 
         if (app.quit) {

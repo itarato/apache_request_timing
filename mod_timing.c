@@ -51,6 +51,8 @@ static void register_hooks(apr_pool_t *pool) {
 }
 
 static int timing_handler(request_rec *r) {
+    openlog("mod_timing", 0, 0);
+    syslog(LOG_NOTICE, "START -> FILE: %s ARGS: %s", r->filename, r->args);
     microtime_start = get_micro_timestamp();
     return DECLINED;
 }
@@ -83,7 +85,7 @@ void report_time_via_socket(char *site_id, double t) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sockfd < 0) {
-        // This can be normal, probably server is listening.
+        syslog(LOG_ERR, "Cannot initialize socket.");
         return;
     }
 
@@ -100,8 +102,7 @@ void report_time_via_socket(char *site_id, double t) {
     serv_addr.sin_port = htons(portno);
 
     if (connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
-        syslog(LOG_ERR, "Cannot connect to socket.");
-        close(sockfd);
+        // This can be normal, probably server is listening.
         goto close_socket_and_return;
     }
 
